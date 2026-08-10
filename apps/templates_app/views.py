@@ -28,7 +28,7 @@ def template_create(request):
 
         if not name or not query_pattern:
             messages.error(request, 'Name and query pattern are required.')
-            return redirect('templates_list')
+            return redirect('templates:templates_list')
 
         ResearchTemplate.objects.create(
             user=request.user,
@@ -39,9 +39,9 @@ def template_create(request):
         )
 
         messages.success(request, 'Template created!')
-        return redirect('templates_list')
+        return redirect('templates:templates_list')
 
-    return redirect('templates_list')
+    return redirect('templates:templates_list')
 
 
 @login_required
@@ -49,7 +49,7 @@ def template_delete(request, pk):
     template = get_object_or_404(ResearchTemplate, pk=pk, user=request.user)
     template.delete()
     messages.success(request, 'Template deleted.')
-    return redirect('templates_list')
+    return redirect('templates:templates_list')
 
 
 @login_required
@@ -58,7 +58,7 @@ def template_use(request, pk):
 
     if not template.is_public and template.user != request.user:
         messages.error(request, 'You do not have permission to use this template.')
-        return redirect('templates_list')
+        return redirect('templates:templates_list')
 
     template.increment_usage()
 

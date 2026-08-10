@@ -10,6 +10,12 @@ from django.db.models import Count, Q, Max
 from django.core.paginator import Paginator
 from django.contrib.admin.views.decorators import staff_member_required
 
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+
 from .forms import RegisterForm, LoginForm, ProfileForm
 
 User = get_user_model()
@@ -63,6 +69,50 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out.')
     return redirect('accounts:home')
+
+
+@login_required
+def verify_email_send(request):
+    """Queue a verification email (or display the link if console backend)."""
+    user = request.user
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    verify_url = request.build_absolute_uri(f"/accounts/verify-email/{uid}/{token}/")
+    profile = user.profile
+
+    if settings.EMAIL_BACKEND != 'django.core.mail.backends.console.EmailBackend':
+        send_mail(
+            subject='Verify your email — AI Research Agent',
+            message=f'Click to verify: {verify_url}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        messages.success(request, f'Verification email sent to {user.email}.')
+    else:
+        messages.info(request, f'Console backend — verification link: {verify_url}')
+
+    return redirect('accounts:profile')
+
+
+@login_required
+def verify_email_confirm(request, uidb64, token):
+    """Consume the verification token and flip `email_verified`."""
+    try:
+        user_id = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=user_id)
+    except (User.DoesNotExist, ValueError, TypeError):
+        messages.error(request, 'Verification link is invalid.')
+        return redirect('accounts:profile')
+
+    if default_token_generator.check_token(user, token):
+        user.profile.email_verified = True
+        user.profile.save(update_fields=['email_verified'])
+        messages.success(request, 'Email verified successfully.')
+    else:
+        messages.error(request, 'Verification link expired or already used.')
+
+    return redirect('accounts:profile')
 
 
 @login_required

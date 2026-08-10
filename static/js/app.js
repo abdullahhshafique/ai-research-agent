@@ -87,24 +87,24 @@ const MobileMenu = {
 };
 
 // Auto-dismiss messages with screen reader announcement
-const MessageManager = {
-    init() {
-        const messages = document.querySelectorAll('.animate-fade-in');
-        messages.forEach(msg => {
+//const MessageManager = {
+    //init() {
+        //const messages = document.querySelectorAll('.animate-fade-in');
+        //messages.forEach(msg => {
             // Make messages assertive for screen readers
-            if (msg.classList.contains('bg-red-900') || msg.classList.contains('bg-green-900')) {
-                msg.setAttribute('role', 'alert');
-                msg.setAttribute('aria-live', 'assertive');
-            }
+            //if (msg.classList.contains('bg-red-900') || msg.classList.contains('bg-green-900')) {
+            //    msg.setAttribute('role', 'alert');
+            //    msg.setAttribute('aria-live', 'assertive');
+            //}
 
-            setTimeout(() => {
-                msg.style.opacity = '0';
-                msg.style.transition = 'opacity 0.5s';
-                setTimeout(() => msg.remove(), 500);
-            }, 5000);
-        });
-    }
-};
+            //setTimeout(() => {
+            //    msg.style.opacity = '0';
+            //    msg.style.transition = 'opacity 0.5s';
+            //    setTimeout(() => msg.remove(), 500);
+            //}, 5000);
+        //});
+    //}
+//};
 
 // Keyboard navigation helpers
 const KeyboardNavigation = {
@@ -144,6 +144,6 @@ const KeyboardNavigation = {
 document.addEventListener('DOMContentLoaded', () => {
     ThemeManager.init();
     MobileMenu.init();
-    MessageManager.init();
+    //MessageManager.init();
     KeyboardNavigation.init();
 });

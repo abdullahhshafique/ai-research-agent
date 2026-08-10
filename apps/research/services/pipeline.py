@@ -125,24 +125,8 @@ def execute_research_pipeline(query, user, _progress_callback=None):
     # Stage 5: PDF Generation (90-100%)
     progress(90, "pdf", "Generating PDF...")
     
-    # Build report markdown
-    report_builder = ReportBuilder(
-        title=f"Research Report: {query.query_text[:50]}",
-        query=query.query_text
-    )
-    report_builder.add_summary(summary)
-    if insight:
-        report_builder.add_insight(insight)
-    report_builder.add_sources([
-        {
-            'url': s['url'],
-            'title': s['title'],
-            'domain': s['domain'],
-            'score': s['score']
-        }
-        for s in sources_data
-    ])
-    report_md = report_builder.build()
+    # Build report markdown from the saved query state
+    report_md = ReportBuilder.from_research_query(query)
     
     # Get user's logo if available
     logo_url = None
@@ -157,8 +141,7 @@ def execute_research_pipeline(query, user, _progress_callback=None):
     exporter = PDFExporter()
     exporter.export(
         markdown_content=report_md,
-        title=f"Research: {query.query_text[:50]}",
-        query=query.query_text,
+        research=query,
         accent_color=user.profile.accent_color if hasattr(user, 'profile') else "#3B82F6",
         logo_url=logo_url,
         output_path=output_path

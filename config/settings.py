@@ -79,6 +79,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.utils.context_processors.global_flags',
             ],
         },
     },
@@ -155,6 +156,29 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@airesearchagent.com')
 
+# Optional real SMTP (Phase 3) — set EMAIL_BACKEND + EMAIL_HOST/... to activate
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+
+# --- Phase 3 opt-ins ---
+USE_CELERY = bool(os.getenv('CELERY_BROKER_URL', ''))
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', '')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+
+# Optional R2/S3 persistent media
+USE_S3_MEDIA = os.getenv('USE_S3_MEDIA', 'False').lower() in ('1', 'true', 'yes')
+if USE_S3_MEDIA:
+    AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET', '')
+    AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL', '')
+    AWS_S3_REGION_NAME = os.getenv('R2_REGION', 'auto')
+    AWS_DEFAULT_ACL = 'private'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
 # API Keys
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 TAVILY_API_KEY = os.getenv('TAVILY_API_KEY', '')
@@ -224,6 +248,19 @@ if DEBUG:
         'filename': LOGS_DIR / 'django.log',
         'formatter': 'verbose',
     }
+
+# Sentry (Phase 3) — opt-in via SENTRY_DSN
+SENTRY_DSN = os.getenv('SENTRY_DSN', '')
+if SENTRY_DSN and not DEBUG:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_RATE', '0.1')),
+        profiles_sample_rate=0.0,
+        send_default_pii=False,
+    )
 
 # Security settings
 if not DEBUG:

@@ -1,5 +1,6 @@
 """
 LLM summarization service using Groq and Gemini APIs.
+FIXED: Updated Gemini model names and added fallback mechanism.
 """
 import logging
 from typing import List, Any, Optional
@@ -41,6 +42,13 @@ Structure your response as:
 
 ## Final Insight
 [Forward-looking conclusion or recommendation]"""
+    
+    # List of available Gemini models to try in order
+    GEMINI_MODELS = [
+        "gemini-2.0-flash-exp",
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+    ]
     
     def __init__(self):
         self.groq_key = settings.GROQ_API_KEY
@@ -133,15 +141,14 @@ Structure your response as:
         return content
     
     def _summarize_gemini(self, prompt: str) -> str:
-        """Use Google Gemini API as fallback."""
-        # Use header-based auth instead of URL query parameter
-        # This prevents API key from being exposed in server logs and URL history
+        """
+        Use Google Gemini API as fallback.
+        Tries multiple model names in case one is not available.
+        """
         headers = {
             "x-goog-api-key": self.gemini_key,
             "Content-Type": "application/json"
         }
-        
-        url = "/models/gemini-1.5-flash:generateContent"
         
         payload = {
             "contents": [{
@@ -153,7 +160,54 @@ Structure your response as:
             }
         }
         
-        response = self.gemini_client.post(url, data=payload, headers=headers)
-        content = response['candidates'][0]['content']['parts'][0]['text']
-        logger.info("Gemini summarization complete")
-        return content
+        last_error = None
+        
+        # Try each model in order
+        for model_name in self.GEMINI_MODELS:
+            try:
+                url = f"/models/{model_name}:generateContent"
+                logger.info(f"Attempting Gemini with model: {model_name}")
+                
+                response = self.gemini_client.post(url, data=payload, headers=headers)
+                
+                # Check if response has the expected structure
+                if 'candidates' in response and len(response['candidates']) > 0:
+                    if 'content' in response['candidates'][0]:
+                        parts = response['candidates'][0]['content'].get('parts', [])
+                        if parts and 'text' in parts[0]:
+                            content = parts[0]['text']
+                            logger.info(f"Gemini summarization complete with {model_name}")
+                            return content
+                
+                # If we got here, the response structure was unexpected
+                logger.warning(f"Unexpected response structure from {model_name}: {response}")
+                continue
+                
+            except APIError as e:
+                last_error = e
+                logger.warning(f"Gemini {model_name} failed: {e}")
+                
+                # Check if it's a model not found error
+                if "not found" in str(e).lower():
+                    continue
+                # If it's a rate limit or other error, try next model
+                elif "rate limit" in str(e).lower():
+                    logger.warning("Rate limit hit, waiting before next attempt...")
+                    import time
+                    time.sleep(2)
+                    continue
+                else:
+                    # Other errors - try next model anyway
+                    continue
+        
+        # If all models failed, try one more time with gemini-1.5-flash as last resort
+        try:
+            logger.warning("All models failed, trying gemini-1.5-flash as last resort...")
+            url = "/models/gemini-1.5-flash:generateContent"
+            response = self.gemini_client.post(url, data=payload, headers=headers)
+            content = response['candidates'][0]['content']['parts'][0]['text']
+            logger.info("Gemini summarization complete with gemini-1.5-flash (last resort)")
+            return content
+        except Exception as e:
+            logger.error(f"All Gemini models failed. Last error: {e}")
+            raise APIError(f"All Gemini models failed: {last_error or e}") from last_error

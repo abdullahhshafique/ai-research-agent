@@ -68,9 +68,7 @@ def research_submit(request):
             )
             messages.success(request, 'Research query submitted! Processing...')
 
-        # FIX: Increment quota AFTER job submission, but before processing starts
-        # Better approach: increment in pipeline on success, but for now keep here
-        # with a note that this should be moved to pipeline success callback
+        # Increment quota
         request.user.profile.increment_quota()
 
         # Submit to job queue for async processing
@@ -143,12 +141,15 @@ def research_status(request, pk):
 
 @login_required
 def research_stream(request, pk):
-    """SSE stream for research progress via job queue."""
+    """
+    SSE stream for research progress via job queue.
+    FIXED: Removed Connection: keep-alive header to prevent wsgiref AssertionError.
+    """
     try:
         research = ResearchQuery.objects.get(pk=pk, user=request.user)
     except ResearchQuery.DoesNotExist:
         def error_stream():
-            yield "event: error\ndata: \"{\"message\": \"Research not found or access denied\"}\"\n\n"
+            yield "event: error\ndata: " + json.dumps({"message": "Research not found or access denied"}) + "\n\n"
         return StreamingHttpResponse(
             error_stream(),
             content_type='text/event-stream'
@@ -214,13 +215,15 @@ def research_stream(request, pk):
 
             time.sleep(0.5)
 
+    # FIX: Removed Connection: keep-alive header to fix AssertionError
     response = StreamingHttpResponse(
         event_stream(),
         content_type='text/event-stream'
     )
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
-    response['Connection'] = 'keep-alive'
+    # DO NOT add Connection: keep-alive header - it causes AssertionError in wsgiref
+    # response['Connection'] = 'keep-alive'  # <-- REMOVED
 
     return response
 

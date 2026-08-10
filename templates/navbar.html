@@ -66,6 +66,11 @@
                             {% if user.is_staff %}
                             <a href="{% url 'dashboard:admin_dashboard' %}" class="block px-4 py-2 hover:bg-gray-700" role="menuitem">Dashboard</a>
                             {% endif %}
+                            <hr class="border-gray-700 my-1">
+                            <div class="px-4 py-2 text-sm text-gray-300 flex items-center justify-between gap-2">
+                              <span class="text-xs uppercase tracking-wider text-gray-500">Quota</span>
+                              <span class="text-xs font-medium text-blue-300">{{ user.profile.used_quota|default:0 }}/{{ user.profile.quota_limit|default:10 }}</span>
+                            </div>
                             <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 hover:bg-gray-700 rounded-b-lg text-red-400" role="menuitem">Logout</a>
                         </div>
                     </div>

@@ -55,6 +55,7 @@ class Profile(models.Model):
     quota_limit = models.IntegerField(default=10)
     used_quota = models.IntegerField(default=0)
     quota_reset_at = models.DateTimeField(null=True, blank=True)
+    email_verified = models.BooleanField(default=False)
     theme = models.CharField(
         max_length=10, 
         choices=THEME_CHOICES, 

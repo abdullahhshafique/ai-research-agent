@@ -15,6 +15,15 @@
                 <p class="text-sm text-gray-400">Role</p>
                 <p class="text-lg font-semibold capitalize">{{ user.profile.role }}</p>
             </div>
+            <div>
+                <p class="text-sm text-gray-500">Email Status</p>
+                {% if user.profile.email_verified %}
+                    <p class="text-lg font-semibold text-green-400">Verified ✅</p>
+                {% else %}
+                    <p class="text-lg font-semibold text-amber-400">Not verified ⚠️</p>
+                    <form method="post" action="{% url 'accounts:verify_email_send' %}">{% csrf_token %}<button type="submit" class="text-xs text-blue-400 hover:text-blue-300 underline mt-1">Send verification email</button></form>
+                {% endif %}
+            </div>
             <div class="card p-4 rounded-lg">
                 <p class="text-sm text-gray-400">Quota</p>
                 <p class="text-lg font-semibold">{{ user.profile.used_quota }} / {{ user.profile.quota_limit }}</p>

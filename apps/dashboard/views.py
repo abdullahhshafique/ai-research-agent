@@ -9,6 +9,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+import time
 
 from apps.accounts.models import User
 from apps.research.models import ResearchQuery

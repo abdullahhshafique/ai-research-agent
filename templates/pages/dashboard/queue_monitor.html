@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Queue Monitor - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Job Queue Monitor</h1>
+    
+    <!-- Stats Cards -->
+    <div class="grid md:grid-cols-6 gap-4 mb-8">
+        {% for key, value in queue_status.items %}
+        <div class="card rounded-xl p-4 text-center">
+            <p class="text-sm text-gray-400 capitalize">{{ key|default:"status" }}</p>
+            <p class="text-2xl font-bold mt-1">{{ value }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Active Jobs Table -->
+    <div class="card rounded-xl overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-800">
+                <tr>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Job ID</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Query</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Status</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Progress</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Stage</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Runtime</th>
+                    <th class="text-left p-4 text-sm font-medium text-gray-400">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800">
+                {% for job in jobs %}
+                <tr class="hover:bg-gray-800 transition">
+                    <td class="p-4 font-mono text-sm">{{ job.id }}</td>
+                    <td class="p-4">#{{ job.query_id }}</td>
+                    <td class="p-4">
+                        <span class="px-2 py-1 rounded text-xs
+                            {% if job.status == 'processing' %}bg-blue-900 text-blue-400
+                            {% elif job.status == 'completed' %}bg-green-900 text-green-400
+                            {% elif job.status == 'failed' %}bg-red-900 text-red-400
+                            {% elif job.status == 'cancelled' %}bg-yellow-900 text-yellow-400
+                            {% else %}bg-gray-800 text-gray-400{% endif %}">
+                            {{ job.status|title }}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full transition-all" style="width: {{ job.progress }}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-500">{{ job.progress }}%</span>
+                    </td>
+                    <td class="p-4 text-gray-400">{{ job.stage }}</td>
+                    <td class="p-4 text-gray-400">{{ job.runtime }}s</td>
+                    <td class="p-4">
+                        {% if job.status == 'processing' or job.status == 'queued' or job.status == 'pending' %}
+                        <form method="post" action="{% url 'research:research_cancel' job.query_id %}" class="inline" onsubmit="return confirm('Cancel this job?');">
+                            {% csrf_token %}
+                            <button type="submit" class="px-3 py-1 rounded bg-red-900 text-red-400 text-sm hover:bg-red-800 transition">
+                                Cancel
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="p-8 text-center text-gray-400">No jobs in queue</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Auto-refresh -->
+    <script>
+        setTimeout(() => location.reload(), 5000);
+    </script>
+</div>
+{% endblock %}
