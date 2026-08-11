@@ -6,9 +6,9 @@ Submit a query → the agent searches the web (Tavily), summarises the findings 
 
 ## Architecture
 
-![Workflow](media/workflow.svg)
+![Workflow](static/workflow gif.gif)
 
-![System Architecture](media/aritecture.jpg)
+![System Architecture](static/aritecture.jpg)
 
 ## Tech Stack
 
