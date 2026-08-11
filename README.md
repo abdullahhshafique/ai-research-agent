@@ -4,6 +4,12 @@ Turn a natural-language question into a structured, cited, downloadable PDF rese
 
 Submit a query → the agent searches the web (Tavily), summarises the findings with an LLM (Groq / Llama 3.3, Gemini fallback), builds a Markdown report, and exports a branded PDF — with live progress streamed to the browser.
 
+## Architecture
+
+![Workflow](media/workflow.svg)
+
+![System Architecture](media/aritecture.jpg)
+
 ## Tech Stack
 
 | Layer | Technology |
